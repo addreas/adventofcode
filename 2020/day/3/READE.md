@@ -1,0 +1,3 @@
+```sh
+elixir main.ex
+```
