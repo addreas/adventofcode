@@ -1,0 +1,3 @@
+```sh
+julia main.jl
+```
