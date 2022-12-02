@@ -1,0 +1,90 @@
+# Untitled
+
+```elixir
+input = File.read!("2022/day/2/input.txt") |> String.split("\n") |> Enum.drop(-1)
+```
+
+## Section
+
+```elixir
+defmodule X do
+  @win_score 6
+  @draw_score 3
+  @lose_score 0
+
+  def atomize([a, b]), do: [atomize(a), atomize(b)]
+  def atomize("A"), do: :rock
+  def atomize("B"), do: :paper
+  def atomize("C"), do: :scissor
+
+  def atomize("X"), do: :rock
+  def atomize("Y"), do: :paper
+  def atomize("Z"), do: :scissor
+
+  def score(game) do
+    choice_score =
+      case game do
+        [_, :rock] -> 1
+        [_, :paper] -> 2
+        [_, :scissor] -> 3
+      end
+
+    game_score =
+      case game do
+        [elf, me] when elf == me -> @draw_score
+        [:rock, :paper] -> @win_score
+        [:rock, :scissor] -> @lose_score
+        [:paper, :rock] -> @lose_score
+        [:paper, :scissor] -> @win_score
+        [:scissor, :rock] -> @win_score
+        [:scissor, :paper] -> @lose_score
+      end
+
+    choice_score + game_score
+  end
+end
+```
+
+```elixir
+input
+|> Enum.map(&String.split/1)
+|> Enum.map(&X.atomize/1)
+|> Enum.map(&X.score/1)
+|> Enum.sum()
+```
+
+```elixir
+defmodule Y do
+  def atomize([a, b]), do: [atomize(a), atomize(b)]
+  def atomize("A"), do: :rock
+  def atomize("B"), do: :paper
+  def atomize("C"), do: :scissor
+
+  def atomize("X"), do: :lose
+  def atomize("Y"), do: :draw
+  def atomize("Z"), do: :win
+
+  def score([x, y]) do
+    response =
+      case [x, y] do
+        [x, :draw] -> x
+        [:rock, :lose] -> :scissor
+        [:rock, :win] -> :paper
+        [:paper, :lose] -> :rock
+        [:paper, :win] -> :scissor
+        [:scissor, :lose] -> :paper
+        [:scissor, :win] -> :rock
+      end
+
+    X.score([x, response])
+  end
+end
+```
+
+```elixir
+input
+|> Enum.map(&String.split/1)
+|> Enum.map(&Y.atomize/1)
+|> Enum.map(&Y.score/1)
+|> Enum.sum()
+```
