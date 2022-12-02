@@ -8,39 +8,40 @@ input = File.read!("2022/day/2/input.txt") |> String.split("\n") |> Enum.drop(-1
 
 ```elixir
 defmodule X do
+  @atom_for %{
+    "A" => :rock,
+    "B" => :paper,
+    "C" => :scissor,
+    "X" => :rock,
+    "Y" => :paper,
+    "Z" => :scissor
+  }
+
+  def atomize([a, b]), do: [@atom_for[a], @atom_for[b]]
+
   @win_score 6
   @draw_score 3
   @lose_score 0
 
-  def atomize([a, b]), do: [atomize(a), atomize(b)]
-  def atomize("A"), do: :rock
-  def atomize("B"), do: :paper
-  def atomize("C"), do: :scissor
+  @counter %{
+    rock: :paper,
+    paper: :scissor,
+    scissor: :rock
+  }
 
-  def atomize("X"), do: :rock
-  def atomize("Y"), do: :paper
-  def atomize("Z"), do: :scissor
+  @choice_score %{
+    rock: 1,
+    paper: 2,
+    scissor: 3
+  }
 
-  def score(game) do
-    choice_score =
-      case game do
-        [_, :rock] -> 1
-        [_, :paper] -> 2
-        [_, :scissor] -> 3
+  def score([elf, me]) do
+    @choice_score[me] +
+      cond do
+        elf == me -> @draw_score
+        @counter[elf] == me -> @win_score
+        @counter[me] == elf -> @lose_score
       end
-
-    game_score =
-      case game do
-        [elf, me] when elf == me -> @draw_score
-        [:rock, :paper] -> @win_score
-        [:rock, :scissor] -> @lose_score
-        [:paper, :rock] -> @lose_score
-        [:paper, :scissor] -> @win_score
-        [:scissor, :rock] -> @win_score
-        [:scissor, :paper] -> @lose_score
-      end
-
-    choice_score + game_score
   end
 end
 ```
@@ -55,28 +56,37 @@ input
 
 ```elixir
 defmodule Y do
-  def atomize([a, b]), do: [atomize(a), atomize(b)]
-  def atomize("A"), do: :rock
-  def atomize("B"), do: :paper
-  def atomize("C"), do: :scissor
+  @atom_for %{
+    "A" => :rock,
+    "B" => :paper,
+    "C" => :scissor,
+    "X" => :lose,
+    "Y" => :draw,
+    "Z" => :win
+  }
 
-  def atomize("X"), do: :lose
-  def atomize("Y"), do: :draw
-  def atomize("Z"), do: :win
+  def atomize([a, b]), do: [@atom_for[a], @atom_for[b]]
+
+  @counter %{
+    rock: :paper,
+    paper: :scissor,
+    scissor: :rock
+  }
+
+  @anti_counter @counter
+                |> Map.to_list()
+                |> Enum.map(fn {a, b} -> {b, a} end)
+                |> Map.new()
 
   def score([x, y]) do
-    response =
-      case [x, y] do
-        [x, :draw] -> x
-        [:rock, :lose] -> :scissor
-        [:rock, :win] -> :paper
-        [:paper, :lose] -> :rock
-        [:paper, :win] -> :scissor
-        [:scissor, :lose] -> :paper
-        [:scissor, :win] -> :rock
+    X.score([
+      x,
+      case y do
+        :draw -> x
+        :win -> @counter[x]
+        :lose -> @anti_counter[x]
       end
-
-    X.score([x, response])
+    ])
   end
 end
 ```
