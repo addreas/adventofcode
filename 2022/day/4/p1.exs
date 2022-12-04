@@ -1,0 +1,11 @@
+File.read!("input.txt")
+|> String.split("\n")
+|> Enum.drop(-1)
+|> Enum.map(&String.split(&1, ","))
+|> Enum.map(fn x ->
+  Enum.map(x, &String.split(&1, "-"))
+  |> Enum.map(fn x -> Enum.map(x, &String.to_integer/1) end)
+  |> Enum.map(fn [lo, hi] -> MapSet.new(lo..hi) end)
+end)
+|> Enum.count(fn [a, b] -> MapSet.subset?(a, b) or MapSet.subset?(b, a) end)
+|> IO.inspect()
