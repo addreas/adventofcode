@@ -1,0 +1,60 @@
+# Untitled
+
+## Section
+
+```elixir
+[unparsed_crates, unparsed_moves] = File.read!("./input.txt") |> String.split("\n\n")
+IO.puts(unparsed_crates)
+
+crates =
+  unparsed_crates
+  |> String.split("\n")
+  |> Enum.drop(-1)
+  |> Enum.flat_map(fn x ->
+    Enum.chunk_every(to_charlist(x), 4)
+    |> Enum.map(&to_string/1)
+    |> Enum.map(&String.at(&1, 1))
+    |> Enum.zip(1..9)
+  end)
+  |> Enum.filter(fn {l, _} -> l != " " end)
+  |> Enum.reverse()
+  |> Enum.reduce(%{}, fn {crate, stack_index}, acc ->
+    Map.update(acc, stack_index, [crate], fn stack -> [crate | stack] end)
+  end)
+```
+
+```elixir
+IO.puts(unparsed_moves)
+
+moves =
+  unparsed_moves
+  |> String.split("\n")
+  |> Enum.drop(-1)
+  |> Enum.map(&String.split/1)
+  |> Enum.map(fn [_, n, _, from, _, to] -> [n, from, to] |> Enum.map(&String.to_integer/1) end)
+  |> Enum.map(fn [n, from, to] -> {n, from, to} end)
+```
+
+```elixir
+moves
+|> Enum.reduce(crates, fn {n, from, to}, c ->
+  {taken, c} = Map.get_and_update!(c, from, &Enum.split(&1, n))
+  Map.update!(c, to, fn stack -> Enum.reverse(taken) ++ stack end)
+end)
+|> IO.inspect()
+|> Map.values()
+|> Enum.map(&hd/1)
+|> Enum.join()
+```
+
+```elixir
+moves
+|> Enum.reduce(crates, fn {n, from, to}, c ->
+  {taken, c} = Map.get_and_update!(c, from, &Enum.split(&1, n))
+  Map.update!(c, to, fn stack -> taken ++ stack end)
+end)
+|> IO.inspect()
+|> Map.values()
+|> Enum.map(&hd/1)
+|> Enum.join()
+```
