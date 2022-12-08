@@ -1,0 +1,65 @@
+# Untitled
+
+## Section
+
+```elixir
+input =
+  File.read!("./input.txt")
+  |> String.split("$ ")
+  |> Enum.drop(1)
+  |> Enum.map(&String.trim/1)
+```
+
+```elixir
+files =
+  input
+  |> Enum.map(&String.split(&1, "\n"))
+  |> Enum.map(fn l -> Enum.map(l, &String.split(&1)) end)
+  |> Enum.reduce({"/", []}, fn
+    [["cd", dir] | _], {cwd, acc} ->
+      {Path.expand(Path.join(cwd, dir)), acc}
+
+    [["ls"] | files], {cwd, acc} ->
+      {
+        cwd,
+        files
+        |> Enum.filter(fn [d, _] -> d != "dir" end)
+        |> Enum.map(fn [size, name] -> {Path.join(cwd, name), String.to_integer(size)} end)
+        |> Enum.concat(acc)
+      }
+  end)
+  |> then(fn {_, files} -> files end)
+```
+
+```elixir
+defmodule X do
+  def to_the_root(dirs, "/", _), do: dirs
+
+  def to_the_root(dirs, dir, size) do
+    dir = Path.dirname(dir)
+
+    Map.update(dirs, dir, size, &(&1 + size))
+    |> X.to_the_root(dir, size)
+  end
+end
+```
+
+```elixir
+dirs = Enum.reduce(files, %{}, fn {dir, size}, dirs -> X.to_the_root(dirs, dir, size) end)
+```
+
+```elixir
+Map.values(dirs)
+|> Enum.filter(&(&1 <= 100_000))
+|> Enum.sum()
+```
+
+```elixir
+total = 70_000_000
+wanted = 30_000_000
+available = total - dirs["/"]
+
+Map.values(dirs)
+|> Enum.filter(&(&1 >= wanted - available))
+|> Enum.min()
+```
