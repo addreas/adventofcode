@@ -1,0 +1,122 @@
+# Untitled notebook
+
+```elixir
+Mix.install([{:math, "~> 0.6.0"}])
+```
+
+## Section
+
+```elixir
+monkeys =
+  File.read!("input.txt")
+  # monkeys = File.read!("t1.txt")
+  |> String.replace("\r", "")
+  |> String.trim()
+  |> String.split("\n\n")
+  |> Enum.map(&String.split(&1, "\n"))
+  |> Enum.map(fn [
+                   <<"Monkey ", index::binary>>,
+                   <<"  Starting items: ", starting::binary>>,
+                   <<"  Operation: new = ", operation::binary>>,
+                   <<"  Test: divisible by ", divisible_by::binary>>,
+                   <<"    If true: throw to monkey ", if_true_to::binary>>,
+                   <<"    If false: throw to monkey ", if_false_to::binary>>
+                 ] ->
+    {
+      index |> String.trim_trailing(":") |> String.to_integer(),
+      %{
+        items:
+          starting
+          |> String.split(", ")
+          |> Enum.map(&String.to_integer/1),
+        operation:
+          operation
+          |> String.split()
+          |> then(fn
+            ["old", op, "old"] -> {:old, op, :old}
+            ["old", op, number] -> {:old, op, number |> String.to_integer()}
+          end)
+          |> then(fn
+            {:old, "*", :old} -> fn old -> old * old end
+            {:old, "+", :old} -> fn old -> old + old end
+            {:old, "*", n} when is_integer(n) -> fn old -> old * n end
+            {:old, "+", n} when is_integer(n) -> fn old -> old + n end
+          end),
+        divby: divisible_by |> String.to_integer(),
+        true_target: if_true_to |> String.to_integer(),
+        false_target: if_false_to |> String.to_integer(),
+        inspections: 0
+      }
+    }
+  end)
+  |> Map.new()
+```
+
+```elixir
+0..(20 * map_size(monkeys) - 1)
+|> Enum.reduce(monkeys, fn i, monks ->
+  monki = rem(i, map_size(monkeys))
+
+  {monk, monks} =
+    monks
+    |> Map.get_and_update(monki, fn monk ->
+      {
+        monk,
+        %{monk | items: [], inspections: monk.inspections + length(monk.items)}
+      }
+    end)
+
+  # IO.puts("Monkey #{monki}:")
+
+  monk.items
+  |> Enum.reduce(monks, fn item, monks ->
+    new = div(monk.operation.(item), 3)
+    target = if rem(new, monk.divby) == 0, do: monk.true_target, else: monk.false_target
+    # IO.puts("  Item with worry level #{new} is thrown to monkey #{target}.")
+    update_in(monks[target][:items], &(&1 ++ [new]))
+  end)
+end)
+|> Map.values()
+|> Enum.map(fn %{inspections: i} -> i end)
+|> Enum.sort()
+|> Enum.take(-2)
+|> Enum.product()
+```
+
+```elixir
+rounds = 10000
+
+lcm =
+  Map.values(monkeys)
+  |> Enum.map(& &1.divby)
+  |> Enum.reduce(&Math.lcm/2)
+
+0..(rounds * map_size(monkeys) - 1)
+|> Enum.reduce(monkeys, fn i, monks ->
+  monki = rem(i, map_size(monkeys))
+
+  {monk, monks} =
+    monks
+    |> Map.get_and_update(monki, fn monk ->
+      {
+        monk,
+        %{monk | items: [], inspections: monk.inspections + length(monk.items)}
+      }
+    end)
+
+  # IO.puts("Monkey #{monki}:")
+
+  monk.items
+  |> Enum.reduce(monks, fn item, monks ->
+    new = rem(monk.operation.(item), lcm)
+    target = if rem(new, monk.divby) == 0, do: monk.true_target, else: monk.false_target
+    # IO.puts("  Item with worry level #{new} is thrown to monkey #{target}.")
+    update_in(monks[target][:items], &(&1 ++ [new]))
+  end)
+end)
+|> Map.values()
+|> Enum.map(fn %{inspections: i} -> i end)
+|> Enum.sort()
+|> Enum.take(-2)
+|> Enum.product()
+```
