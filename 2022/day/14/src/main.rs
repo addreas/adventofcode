@@ -2,45 +2,19 @@
 #![feature(let_chains)]
 use std::collections::BTreeSet;
 use std::fs;
+extern crate termion;
 
 type P = (i64, i64);
 
 fn main() {
-    let rocks: BTreeSet<P> = fs::read_to_string("./input.txt")
-        .unwrap()
-        .lines()
-        .map(|l| {
-            l.split(" -> ")
-                .map(|a| {
-                    let coords: Vec<i64> = a.split(",").map(|a| a.parse().unwrap()).collect();
-                    if let [x, y] = coords[..] {
-                        (x, y)
-                    } else {
-                        todo!("too many coordinates")
-                    }
-                })
-                .collect::<Vec<P>>()
-        })
-        .flat_map(|path| {
-            std::iter::zip(path.iter(), path[1..].iter())
-                .flat_map(|(from, to)| {
-                    let (range, dir) = match (from, to) {
-                        ((fx, fy), (tx, ty)) if fx == tx => (*fy..=(*ty), 0),
-                        ((fx, fy), (tx, ty)) if fy == ty => (*fx..=(*tx), 1),
-                        (_, _) => todo!("oh no"),
-                    };
-                    range
-                        .map(|i| if dir == 0 { (from.0, i) } else { (i, from.1) })
-                        .collect::<Vec<P>>()
-                })
-                .collect::<Vec<P>>()
-        })
-        .collect();
-
+    let rocks = get_rocks(fs::read_to_string("input.txt").unwrap());
     let source = (500, 0);
     print(&rocks, &BTreeSet::new(), source, source);
 
-    let resting_grains: BTreeSet<P> = simulate(rocks, source);
+    let resting_grains: BTreeSet<P> = simulate(&rocks, source);
+    println!("resting_grains: {}", resting_grains.len());
+
+    let resting_grains: BTreeSet<P> = simulate2(&rocks, source);
     println!("resting_grains: {}", resting_grains.len());
 }
 
@@ -63,7 +37,7 @@ fn print(rocks: &BTreeSet<P>, resting: &BTreeSet<P>, falling: P, source: P) {
             .max_by_key(|(_, y)| y)
             .map(|(_, y)| y)
             .unwrap()
-            .to_owned(),
+            .to_owned() + 2,
     );
 
     let top_line = (min_x..=max_x)
@@ -73,9 +47,17 @@ fn print(rocks: &BTreeSet<P>, resting: &BTreeSet<P>, falling: P, source: P) {
         })
         .collect::<String>();
 
-    println!("  0 {}", top_line);
+    println!(
+        "{}  0 {}",
+        // termion::clear::All,
+        termion::cursor::Goto(1, 1),
+        top_line
+    );
 
-    for y in 1..=max_y {
+    let (rows, _) = termion::terminal_size().unwrap();
+
+    // for y in 1..=80 {
+    for y in 1..=max_y.min(rows.into()) {
         let line = (min_x..=max_x)
             .map(|x| {
                 if rocks.contains(&(x, y)) {
@@ -94,8 +76,8 @@ fn print(rocks: &BTreeSet<P>, resting: &BTreeSet<P>, falling: P, source: P) {
     }
 }
 
-fn can_go(rocks: &BTreeSet<P>, resting: &BTreeSet<P>, falling: P, dir: P) -> Option<P> {
-    let next = (falling.0 + dir.0, falling.1 + dir.1);
+fn can_go(rocks: &BTreeSet<P>, resting: &BTreeSet<P>, falling: P, dx: i64) -> Option<P> {
+    let next = (falling.0 + dx, falling.1 + 1);
     if !rocks.contains(&next) && !resting.contains(&next) {
         Some(next)
     } else {
@@ -103,7 +85,7 @@ fn can_go(rocks: &BTreeSet<P>, resting: &BTreeSet<P>, falling: P, dir: P) -> Opt
     }
 }
 
-fn simulate(rocks: BTreeSet<P>, source: P) -> BTreeSet<P> {
+fn simulate(rocks: &BTreeSet<P>, source: P) -> BTreeSet<P> {
     let max_y = rocks
         .iter()
         .max_by_key(|(_, y)| y)
@@ -136,11 +118,11 @@ fn simulate(rocks: BTreeSet<P>, source: P) -> BTreeSet<P> {
                 at which point the next unit of sand is created back at the source.
             */
 
-            if let Some(down) = can_go(&rocks, &resting, falling, (0, 1)) {
+            if let Some(down) = can_go(&rocks, &resting, falling, 0) {
                 falling = down;
-            } else if let Some(down_left) = can_go(&rocks, &resting, falling, (-1, 1)) {
+            } else if let Some(down_left) = can_go(&rocks, &resting, falling,  -1) {
                 falling = down_left;
-            } else if let Some(down_right) = can_go(&rocks, &resting, falling, (1, 1)) {
+            } else if let Some(down_right) = can_go(&rocks, &resting, falling, 1) {
                 falling = down_right;
             } else {
                 resting.insert(falling);
@@ -149,11 +131,118 @@ fn simulate(rocks: BTreeSet<P>, source: P) -> BTreeSet<P> {
 
             if falling.1 >= max_y {
                 abyss = true;
+                break;
             }
 
-            print(&rocks, &resting, falling, source);
+            // print(&rocks, &resting, falling, source);
         }
     }
 
     return resting;
+}
+
+fn can_go2(rocks: &BTreeSet<P>, resting: &BTreeSet<P>, falling: P, dx: i64, floor: i64) -> Option<P> {
+    let next = (falling.0 + dx, falling.1 + 1);
+    if !rocks.contains(&next) && !resting.contains(&next) && next.1 != floor {
+        Some(next)
+    } else {
+        None
+    }
+}
+
+fn simulate2(rocks: &BTreeSet<P>, source: P) -> BTreeSet<P> {
+    let floor = rocks
+        .iter()
+        .max_by_key(|(_, y)| y)
+        .map(|(_, y)| y)
+        .unwrap()
+        .to_owned() + 2;
+    let mut resting: BTreeSet<P> = BTreeSet::new();
+
+
+    while !resting.contains(&source) {
+        let mut falling = source;
+        loop {
+            if let Some(down) = can_go2(&rocks, &resting, falling, 0, floor) {
+                falling = down;
+            } else if let Some(down_left) = can_go2(&rocks, &resting, falling, -1, floor) {
+                falling = down_left;
+            } else if let Some(down_right) = can_go2(&rocks, &resting, falling, 1, floor) {
+                falling = down_right;
+            } else {
+                resting.insert(falling);
+                break;
+            }
+
+            // print(&rocks, &resting, falling, source);
+        }
+    }
+
+    return resting;
+}
+
+fn get_rocks(input: String) -> BTreeSet<P> {
+    input
+        .lines()
+        .map(|l| {
+            l.split(" -> ")
+                .map(|a| {
+                    let coords: Vec<i64> = a.split(",").map(|a| a.parse().unwrap()).collect();
+                    if let [x, y] = coords[..] {
+                        (x, y)
+                    } else {
+                        todo!("too many coordinates")
+                    }
+                })
+                .collect::<Vec<P>>()
+        })
+        .flat_map(|path| {
+            std::iter::zip(path.iter(), path[1..].iter())
+                .flat_map(|(from, to)| {
+                    let (range, dir) = match (from, to) {
+                        ((fx, fy), (tx, ty)) if fx == tx && fy < ty => (*fy..=(*ty), 0),
+                        ((fx, fy), (tx, ty)) if fy == ty && fx < tx => (*fx..=(*tx), 1),
+                        ((fx, fy), (tx, ty)) if fx == tx && fy > ty => (*ty..=(*fy), 0),
+                        ((fx, fy), (tx, ty)) if fy == ty && fx > tx => (*tx..=(*fx), 1),
+                        (_, _) => todo!("oh no"),
+                    };
+                    println!("from: {from:?}, to: {to:?}, range: {range:?}");
+                    range
+                        .map(|i| if dir == 0 { (from.0, i) } else { (i, from.1) })
+                        .collect::<Vec<P>>()
+                })
+                .collect::<Vec<P>>()
+        })
+        .collect()
+}
+
+#[test]
+fn test() {
+    let rocks = get_rocks("498,4 -> 498,6 -> 496,6\n503,4 -> 502,4 -> 502,9 -> 494,9".to_string());
+
+    println!("{rocks:?}");
+
+    assert!(rocks.contains(&(498, 4)));
+    assert!(rocks.contains(&(498, 5)));
+    assert!(rocks.contains(&(498, 6)));
+    assert!(rocks.contains(&(497, 6)));
+    assert!(rocks.contains(&(496, 6)));
+
+    let source = (500, 0);
+    print(&rocks, &BTreeSet::new(), source, source);
+
+    println!("{}", termion::clear::All);
+    let resting_grains: BTreeSet<P> = simulate(&rocks, source);
+    assert_eq!(resting_grains.len(), 24);
+}
+
+#[test]
+fn test2() {
+    let rocks = get_rocks("498,4 -> 498,6 -> 496,6\n503,4 -> 502,4 -> 502,9 -> 494,9".to_string());
+
+    let source = (500, 0);
+
+    println!("{}", termion::clear::All);
+    let resting_grains: BTreeSet<P> = simulate2(&rocks, source);
+    assert_eq!(resting_grains.len(), 93);
 }
