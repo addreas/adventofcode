@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 YEAR=2023
 DAY=$1
