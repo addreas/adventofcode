@@ -38,4 +38,5 @@ session = String.trim(IO.gets("session="))
 
 Req.get!("https://adventofcode.com/#{year}/day/#{day}/input", headers: %{Cookie: "session=#{session}"})
 |> Map.get(:body)
-|> File.write("#{year}/day/#{day}/input")
+|> then(&(File.write("./#{year}/day/#{day}/input", &1)))
+|> IO.inspect
