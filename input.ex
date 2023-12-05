@@ -28,13 +28,19 @@ body
 IO.puts "Expected result:"
 body
 |> Floki.find(~s{code em})
-|> hd
+|> List.last
 |> Floki.text
 |> String.trim
 |> IO.puts
 
 
-session = String.trim(IO.gets("session="))
+session = case File.read(Path.expand("~/.aoc-session")) do
+  {:ok, content} -> content
+  _ -> IO.gets "session=" 
+end
+|> String.trim
+
+File.mkdir_p "./#{year}/day/#{day}"
 
 Req.get!("https://adventofcode.com/#{year}/day/#{day}/input", headers: %{Cookie: "session=#{session}"})
 |> Map.get(:body)
