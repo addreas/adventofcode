@@ -39,7 +39,7 @@ fn count_again(hand: &Vec<u32>) -> (usize, usize) {
     let mut jokers = 0;
     for i in 2..15 {
         let count = hand.iter().filter(|c| **c == i).count();
-        if i == 10 {
+        if i == 11 {
             jokers = count;
         } else if count > most {
             second_most = most;
@@ -49,7 +49,6 @@ fn count_again(hand: &Vec<u32>) -> (usize, usize) {
         }
     }
 
-    println!("{}, {}, {}", most + jokers, second_most, fmt(hand));
     (most + jokers, second_most)
 }
 
@@ -61,14 +60,13 @@ fn do_it_again(input: &str) -> usize {
             count_again(h),
             h.iter()
                 .map(|i| match i {
-                    10 => 0,
+                    11 => 0,
                     i => *i,
                 })
                 .collect::<Vec<_>>(),
         )
     });
 
-    println!("{hands:?}");
     hands
         .iter()
         .enumerate()
