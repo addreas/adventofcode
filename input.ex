@@ -52,7 +52,7 @@ fn do_it(input: &str) -> usize {
     input.lines().map(parse).map(|_| 0).sum()
 }
 
-fn do_it_again(input: &str) -> u32 {
+fn do_it_again(input: &str) -> usize {
     input.lines().map(parse).map(|_| 0).sum()
 }
 
@@ -70,9 +70,9 @@ fn test() {
     .trim()
     .replace("        ", "");
 
-    assert_eq!(do_it(input.as_str()), 142);
+    assert_eq!(do_it(input.as_str()), #{example_output});
 
-    //assert_eq!(do_it_again(input.as_str()), 0)
+    //assert_eq!(do_it_again(input.as_str()), 0);
 }
 """
 
