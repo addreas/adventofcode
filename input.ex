@@ -49,22 +49,22 @@ fn main() {
 }
 
 fn do_it(input: &str) -> usize {
-    input.lines().map(parse).map(|_| 0).sum()
+    parse(input).iter().map(|_| 0).sum()
 }
 
 fn do_it_again(input: &str) -> usize {
-    input.lines().map(parse).map(|_| 0).sum()
+    parse(input).iter().map(|_| 0).sum()
 }
 
-fn parse(line: &str) -> Vec<u32> {
-    line.split_whitespace()
-        .map(|i| i.parse().unwrap())
+fn parse(input: &str) -> Vec<Vec<usize>> {
+    input
+        .lines()
+        .map(|l| l.split_whitespace().map(|i| i.parse().unwrap()).collect())
         .collect()
 }
-
 #[test]
 fn test() {
-    let input = "
+    let input = r"
         #{example_input |> String.replace("\n", "\n        ")}
     "
     .trim()
