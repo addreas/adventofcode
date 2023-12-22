@@ -53,16 +53,23 @@ fn neighbors_again(x: isize, y: isize) -> Vec<(isize, isize)> {
     ]
 }
 
+fn wrapping_contains(garden: &HashSet<(usize, usize)>, max: (usize, usize), point: (isize, isize)) -> bool {
+    let x = point.0.rem_euclid(max.0 as isize) as usize;
+    let y  = point.1.rem_euclid(max.1 as isize) as usize;
+
+    garden.contains(&(x, y))
+}
+
 fn do_it_again(input: &str, steps: usize) -> usize {
-    let (garden, start, (xmax, ymax)) = parse(input);
+    let (garden, start, max) = parse(input);
 
     let mut visited = HashSet::from([(start.0 as isize, start.1 as isize)]);
     for i in 1..(steps+1) {
         let mut visiting = HashSet::new();
         for &(x, y) in visited.iter() {
-            for &(nx, ny) in neighbors_again(x, y).iter() {
-                if garden.contains(&(nx.rem_euclid(xmax as isize) as usize, ny.rem_euclid(ymax as isize) as usize)) {
-                    visiting.insert((nx, ny));
+            for &neighbor in neighbors_again(x, y).iter() {
+                if wrapping_contains(&garden, max, neighbor) {
+                    visiting.insert(neighbor);
                 }
             }
         }

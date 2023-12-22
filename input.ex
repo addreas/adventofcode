@@ -15,6 +15,8 @@ day =
 
 path = "#{year}/day/#{day}"
 
+IO.puts "Getting #{path}"
+
 body =
   Req.get!("https://adventofcode.com/#{path}")
   |> Map.get(:body)
