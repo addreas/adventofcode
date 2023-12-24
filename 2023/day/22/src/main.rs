@@ -1,4 +1,4 @@
-use std::{collections::HashSet};
+use std::collections::HashSet;
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -39,6 +39,11 @@ fn xy_overlap(
 }
 
 fn fall(mut bricks: Bricks) -> Bricks {
+    assert!(bricks.iter().all(|(a, b)| {
+        (b.0 - a.0 > 0) ^ (b.1 - a.1 > 0) ^ (b.2 - a.2 > 0)
+            || ((b.0 == a.0) && (b.1 == a.1) && (b.2 == a.2))
+    }));
+
     bricks.sort_by_key(|((_, _, z1), (_, _, z2))| *z1.min(z2));
 
     let mut fallen = vec![];
@@ -68,7 +73,11 @@ fn get_bricks_resting_on(this_brick: &Brick, bricks: &Bricks) -> Bricks {
     for b in bricks {
         let bottom_of_b = b.0 .2.min(b.1 .2);
         if bottom_of_b == (top_of_this + 1) && xy_overlap(this_brick, b) {
-            println!("{b:?} rests on {this_brick:?}. {} on {}", brick_name(b), brick_name(this_brick));
+            println!(
+                "{b:?} rests on {this_brick:?}. {} on {}",
+                brick_name(b),
+                brick_name(this_brick)
+            );
             bricks_resting_on_this.push(*b);
         }
     }
@@ -83,7 +92,11 @@ fn get_bricks_holding(this_brick: &Brick, bricks: &Bricks) -> Bricks {
     for b in bricks {
         let top_of_b = b.0 .2.max(b.1 .2);
         if top_of_b == (bottom_of_this - 1) && xy_overlap(this_brick, b) {
-            println!("{b:?} holds up {this_brick:?}. {} on {}", brick_name(this_brick), brick_name(b));
+            println!(
+                "{b:?} holds up {this_brick:?}. {} on {}",
+                brick_name(this_brick),
+                brick_name(b)
+            );
             bricks_holding_this.push(*b);
         }
     }
@@ -96,7 +109,6 @@ fn can_disintegrate(this_brick: &Brick, bricks: &Bricks) -> bool {
         .iter()
         .all(|b| get_bricks_holding(b, bricks).len() > 1)
 }
-
 
 fn do_it(input: &str) -> usize {
     let bricks = fall(parse(input));
@@ -121,6 +133,7 @@ fn parse(input: &str) -> Bricks {
         })
         .collect()
 }
+
 #[test]
 fn test() {
     let input = r"
