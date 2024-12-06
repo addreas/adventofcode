@@ -44,45 +44,87 @@ session =
   |> String.trim()
 
 code = """
-fn main() {
-    let input = include_str!("../input");
-    println!("{}", do_it(input.as_ref()));
-    println!("{}", do_it_again(input.as_ref()));
+import gleam/int
+import gleam/io
+import gleam/list
+import gleam/string
+import simplifile.{read}
+
+pub fn main() {
+  let assert Ok(input) = read("./input")
+  io.debug(do_it(string.trim(input)))
+  io.debug(do_it_again(string.trim(input)))
 }
 
-fn do_it(input: &str) -> usize {
-    parse(input).iter().map(|_| 0).sum()
+pub fn do_it(input: String) -> Int {
+  parse(input)
+  |> list.map(fn(_) { 0 })
+  |> list.fold(0, int.add)
 }
 
-fn do_it_again(input: &str) -> usize {
-    parse(input).iter().map(|_| 0).sum()
+pub fn do_it_again(input: String) -> Int {
+  parse(input)
+  |> list.map(fn(_) { 0 })
+  |> list.fold(0, int.add)
 }
 
-fn parse(input: &str) -> Vec<Vec<usize>> {
-    input
-        .lines()
-        .map(|l| l.split_whitespace().map(|i| i.parse().unwrap()).collect())
-        .collect()
+pub fn parse(input: String) -> List(List(Int)) {
+  string.split(input, "\\n")
+  |> list.map(fn(line) {
+    string.split(line, " ")
+    |> list.map(fn (item) {
+      let assert Ok(int) = int.parse(item)
+      int
+    })
+  })
 }
-#[test]
-fn test() {
-    let input = r"
-        #{example_input |> String.replace("\n", "\n        ")}
-    "
-    .trim()
-    .replace("        ", "");
+"""
 
-    assert_eq!(do_it(input.as_str()), #{example_output});
+test_code = """
+import gleam/io
+import gleam/string
+import gleeunit
+import gleeunit/should
 
-    //assert_eq!(do_it_again(input.as_str()), 0);
+import day_#{day}.{do_it, do_it_again, parse}
+
+pub fn main() {
+  gleeunit.main()
+}
+
+const input = "
+#{example_input}
+"
+
+pub fn parse_test() {
+  input
+  |> string.trim()
+  |> parse()
+  |> io.debug()
+}
+
+pub fn do_it_test() {
+  input
+  |> string.trim()
+  |> do_it()
+  |> should.equal(#{example_output})
+}
+
+pub fn do_it_again_test() {
+  input
+  |> string.trim()
+  |> do_it_again()
+  |> should.equal(#{example_output})
 }
 """
 
 File.mkdir_p("./#{path}")
 
-System.cmd("cargo", ["init", "--name", "day-#{day}"], cd: "./#{path}")
+System.cmd("gleam", ["new", ".", "--name", "day_#{day}", "--skip-github"], cd: "./#{path}")
+System.cmd("gleam", ["add", "simplifile"], cd: "./#{path}")
 
-File.write("./#{path}/src/main.rs", code)
+File.write("./#{path}/src/day_#{day}.gleam", code)
+File.write("./#{path}/test/day_#{day}_test.gleam", test_code)
 
 Req.get!("https://adventofcode.com/#{path}/input", headers: %{Cookie: "session=#{session}"})
 |> Map.get(:body)
