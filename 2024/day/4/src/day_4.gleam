@@ -43,7 +43,21 @@ fn count(words: List(List(String))) -> Int {
 
 pub fn do_it_again(input: String) -> Int {
   parse(input)
-  |> list.map(fn(_) { 0 })
+  |> list.window(3)
+  |> list.map(fn(window) {
+    window
+    |> list.transpose()
+    |> list.window(3)
+    |> list.count(fn(block) {
+      case block {
+        [["M", _, "M"], [_, "A", _], ["S", _, "S"]] -> True
+        [["M", _, "S"], [_, "A", _], ["M", _, "S"]] -> True
+        [["S", _, "M"], [_, "A", _], ["S", _, "M"]] -> True
+        [["S", _, "S"], [_, "A", _], ["M", _, "M"]] -> True
+        _ -> False
+      }
+    })
+  })
   |> list.fold(0, int.add)
 }
 

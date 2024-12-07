@@ -36,9 +36,22 @@ pub fn do_it_test() {
   |> should.equal(18)
 }
 
+const input2 = "
+.M.S......
+..A..MSMS.
+.M.S.MAA..
+..A.ASMSM.
+.M.S.M....
+..........
+S.S.S.S.S.
+.A.A.A.A..
+M.M.M.M.M.
+..........
+"
+
 pub fn do_it_again_test() {
-  input
+  input2
   |> string.trim()
   |> do_it_again()
-  |> should.equal(18)
+  |> should.equal(9)
 }
