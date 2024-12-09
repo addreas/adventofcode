@@ -1,7 +1,8 @@
 import gleam/int
 import gleam/io
 import gleam/list
-import gleam/result
+import gleam/order
+import gleam/set.{type Set}
 import gleam/string
 import simplifile.{read}
 
@@ -15,39 +16,73 @@ pub fn do_it(input: String) -> Int {
   let #(rules, updates) = parse(input)
 
   updates
-  |> list.filter(fn(update) {
-    list.all(rules, fn(rule) {
-      let #(a, b) = rule
-      let #(x, y) =
-        list.index_fold(update, #(-1, -1), fn(acc, item, index) {
-          case item {
-            x if x == a -> #(index, acc.1)
-            x if x == b -> #(acc.0, index)
-            _ -> acc
-          }
-        })
-      x < y || x == -x || y == -1
-    })
-  })
-  |> list.map(fn(update) {
+  |> list.filter(fn(update) { check_update(update, rules) })
+  |> list.map(take_middle)
+  |> list.fold(0, int.add)
+}
+
+fn take_middle(update) {
+  let assert Ok(middle) =
     update
     |> list.drop(list.length(update) / 2)
     |> list.first()
-    |> result.unwrap(0)
+
+  middle
+}
+
+fn rules_for_update(update) {
+  // 3, 1, 7, 2, 5
+
+  // 3|1, 3|7, 3|2, 3|5
+  // 1|7, 1|2, 1|5
+  // 7|2, 7|5
+  // 2|5
+
+  update
+  |> list.index_map(fn(a, i) {
+    update
+    |> list.drop(i + 1)
+    |> list.map(fn(b) { #(a, b) })
   })
-  |> io.debug()
-  |> list.fold(0, int.add)
+  |> list.flat_map(fn(x) { x })
+  |> set.from_list()
+}
+
+fn swap(ab) {
+  let #(a, b) = ab
+  #(b, a)
+}
+
+fn check_update(update, rules: Set(#(Int, Int))) {
+  rules_for_update(update)
+  |> set.map(swap)
+  |> set.is_disjoint(rules)
+}
+
+fn fix_update(update: List(Int), rules: Set(#(Int, Int))) {
+  list.sort(update, by: fn(a, b) {
+    case set.contains(rules, #(a, b)), set.contains(rules, #(b, a)) {
+      True, False -> order.Lt
+      False, True -> order.Gt
+      _, _ -> order.Eq
+    }
+  })
 }
 
 pub fn do_it_again(input: String) -> Int {
   let #(rules, updates) = parse(input)
-  // |> list.map(fn(_) { 0 })
-  // |> list.fold(0, int.add)
 
-  0
+  updates
+  |> list.filter(fn(update) { !check_update(update, rules) })
+  |> list.map(fn(update) {
+    update
+    |> fix_update(rules)
+    |> take_middle()
+  })
+  |> list.fold(0, int.add)
 }
 
-pub fn parse(input: String) -> #(List(#(Int, Int)), List(List(Int))) {
+pub fn parse(input: String) -> #(Set(#(Int, Int)), List(List(Int))) {
   let assert Ok(#(rules, updates)) = string.split_once(input, "\n\n")
 
   let rules =
@@ -59,6 +94,7 @@ pub fn parse(input: String) -> #(List(#(Int, Int)), List(List(Int))) {
       let assert Ok(b) = int.parse(b)
       #(a, b)
     })
+    |> set.from_list()
 
   let updates =
     updates

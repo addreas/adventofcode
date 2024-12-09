@@ -58,5 +58,5 @@ pub fn do_it_again_test() {
   input
   |> string.trim()
   |> do_it_again()
-  |> should.equal(143)
+  |> should.equal(123)
 }

@@ -123,8 +123,15 @@ File.mkdir_p("./#{path}")
 System.cmd("gleam", ["new", ".", "--name", "day_#{day}", "--skip-github"], cd: "./#{path}")
 System.cmd("gleam", ["add", "simplifile"], cd: "./#{path}")
 
-File.write("./#{path}/src/day_#{day}.gleam", code)
-File.write("./#{path}/test/day_#{day}_test.gleam", test_code)
+code_path = "./#{path}/src/day_#{day}.gleam"
+if !File.exists?(code_path) do
+  File.write(code_path, code)
+end
+
+test_path = "./#{path}/test/day_#{day}_test.gleam"
+if !File.exists?(test_path) do
+  File.write(test_path, test_code)
+end
 
 Req.get!("https://adventofcode.com/#{path}/input", headers: %{Cookie: "session=#{session}"})
 |> Map.get(:body)
