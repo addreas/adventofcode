@@ -118,18 +118,15 @@ pub fn do_it_again_test() {
 }
 """
 
-File.mkdir_p("./#{path}")
-
-System.cmd("gleam", ["new", ".", "--name", "day_#{day}", "--skip-github"], cd: "./#{path}")
-System.cmd("gleam", ["add", "simplifile"], cd: "./#{path}")
-
 code_path = "./#{path}/src/day_#{day}.gleam"
-if !File.exists?(code_path) do
-  File.write(code_path, code)
-end
-
 test_path = "./#{path}/test/day_#{day}_test.gleam"
-if !File.exists?(test_path) do
+
+
+if !File.exists?("./#{path}") do
+  File.mkdir_p("./#{path}")
+  System.cmd("gleam", ["new", ".", "--name", "day_#{day}", "--skip-github"], cd: "./#{path}")
+  System.cmd("gleam", ["add", "simplifile"], cd: "./#{path}")
+  File.write(code_path, code)
   File.write(test_path, test_code)
 end
 
